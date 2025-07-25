@@ -398,7 +398,7 @@ function mostrarDetalhesReceita($con)
 
     // Ingredientes | receita.ingrediente
     echo "\nIngredientes:\n";
-    $sql_ing = "SELECT i.nome, ri.quantidade, ri.unidade
+    $sql_ing = "SELECT i.nome, ri.quantidade, ri.unidade_de_medida
                 FROM receita_ingrediente ri
                 JOIN ingrediente i ON ri.id_ingrediente = i.id
                 WHERE ri.id_receita = $id";
@@ -407,7 +407,7 @@ function mostrarDetalhesReceita($con)
 
     if (mysqli_num_rows($resultado_ing) > 0) {
         while ($ing = mysqli_fetch_assoc($resultado_ing)) {
-            echo "- {$ing['nome']}: {$ing['quantidade']} {$ing['unidade']}\n";
+            echo "- {$ing['nome']}: {$ing['quantidade']} {$ing['unidade_de_medida']}\n";
         }
     } else {
         echo "Sem ingredientes associados.\n";
