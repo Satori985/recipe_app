@@ -351,7 +351,7 @@ function associarIngredienteReceita($con)
     $quantidade = readline("Quantidade: ");
     $unidade_de_medida = readline("Unidade (ex: g, ml, colheres): ");
 
-    $sql = "INSERT INTO receita_ingrediente (id_receita, id_ingrediente, quantidade, unidade)
+    $sql = "INSERT INTO receita_ingrediente (id_receita, id_ingrediente, quantidade, unidade_de_medida)
             VALUES ($id_receita, $id_ingrediente, $quantidade, '$unidade_de_medida')";
 
     if (mysqli_query($con, $sql)) {
@@ -371,7 +371,7 @@ function atualizarIngredienteReceita($con)
     $unidade_de_medida = readline("Nova unidade: ");
 
     $sql = "UPDATE receita_ingrediente
-            SET quantidade = $quantidade, unidade = '$unidade_de_medida'
+            SET quantidade = $quantidade, unidade_de_medida = '$unidade_de_medida'
             WHERE id_receita = $id_receita AND id_ingrediente = $id_ingrediente";
 
     if (mysqli_query($con, $sql)) {
@@ -541,9 +541,9 @@ function detalhesCompletosReceita($con)
 function pesquisarReceitasPorTitulo($con)
 {
     echo "\nPesquisar receitas por parte do título\n";
-    $busca = readline("Digite parte do nome da receita: ");
+    $search = readline("Digite parte do nome da receita: ");
 
-    $sql = "SELECT * FROM receita WHERE LOWER(nome) LIKE LOWER('%$busca%')";
+    $sql = "SELECT * FROM receita WHERE LOWER(nome) LIKE LOWER('%$search%')";
 
     $resultado = mysqli_query($con, $sql);
     if (mysqli_num_rows($resultado) > 0) {
