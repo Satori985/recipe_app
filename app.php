@@ -29,6 +29,11 @@ while (!$fim) {
     echo "13 -> Atualizar Ingrediente de Receita\n";
     echo "14 -> Remover Ingrediente de Receita\n";
     echo "15 -> Mostrar Detalhes de uma Receita\n";
+    echo "16 -> Listar receitas por categoria (ID ou nome)\n";
+    echo "17 -> Listar receitas por ingrediente\n";
+    echo "18 -> Ver detalhes completos de uma receita\n";
+    echo "19 -> Pesquisar receitas por parte do título\n";
+
     echo "0 -> Sair do programa\n";
 
     $menu = readline("Opção: ");
@@ -97,6 +102,20 @@ while (!$fim) {
 
         case 15:
             mostrarDetalhesReceita($con);
+            break;
+
+        case 16:
+            listarReceitasPorNomeOuIdCategoria($con);
+            break;
+
+        case 17:
+            listarReceitasPorIngrediente($con);
+            break;
+        case 18:
+            detalhesCompletosReceita($con);
+            break;
+        case 19:
+            pesquisarReceitasPorTitulo($con);
             break;
 
         default:
@@ -330,10 +349,10 @@ function associarIngredienteReceita($con)
     $id_ingrediente = readline("ID do ingrediente: ");
 
     $quantidade = readline("Quantidade: ");
-    $unidade = readline("Unidade (ex: g, ml, colheres): ");
+    $unidade_de_medida = readline("Unidade (ex: g, ml, colheres): ");
 
     $sql = "INSERT INTO receita_ingrediente (id_receita, id_ingrediente, quantidade, unidade)
-            VALUES ($id_receita, $id_ingrediente, $quantidade, '$unidade')";
+            VALUES ($id_receita, $id_ingrediente, $quantidade, '$unidade_de_medida')";
 
     if (mysqli_query($con, $sql)) {
         echo "Ingrediente associado com sucesso!\n";
@@ -349,10 +368,10 @@ function atualizarIngredienteReceita($con)
     $id_ingrediente = readline("ID do ingrediente: ");
 
     $quantidade = readline("Nova quantidade: ");
-    $unidade = readline("Nova unidade: ");
+    $unidade_de_medida = readline("Nova unidade: ");
 
     $sql = "UPDATE receita_ingrediente
-            SET quantidade = $quantidade, unidade = '$unidade'
+            SET quantidade = $quantidade, unidade = '$unidade_de_medida'
             WHERE id_receita = $id_receita AND id_ingrediente = $id_ingrediente";
 
     if (mysqli_query($con, $sql)) {
@@ -411,6 +430,128 @@ function mostrarDetalhesReceita($con)
         }
     } else {
         echo "Sem ingredientes associados.\n";
+    }
+}
+
+function listarReceitasPorNomeOuIdCategoria($con)
+{
+    echo "\nListar receitas por nome ou ID da categoria\n";
+    $input = readline("Digite o ID ou nome da categoria: ");
+
+    if (is_numeric($input)) {
+        $sql = "SELECT r.id, r.nome, r.duracao, r.doses 
+                FROM receita r
+                JOIN receita_categoria rc ON r.id = rc.id_receita
+                WHERE rc.id_categoria = $input";
+    } else {
+        $sql = "SELECT r.id, r.nome, r.duracao, r.doses 
+                FROM receita r
+                JOIN receita_categoria rc ON r.id = rc.id_receita
+                JOIN categoria c ON c.id = rc.id_categoria
+                WHERE LOWER(c.nome) = LOWER('$input')";
+    }
+
+    $resultado = mysqli_query($con, $sql);
+
+    if (mysqli_num_rows($resultado) > 0) {
+        while ($linha = mysqli_fetch_assoc($resultado)) {
+            echo "ID: {$linha['id']} | Nome: {$linha['nome']} | Duração: {$linha['duracao']} | Doses: {$linha['doses']}\n";
+        }
+    } else {
+        echo "Nenhuma receita encontrada para essa categoria.\n";
+    }
+}
+
+function listarReceitasPorIngrediente($con)
+{
+    echo "\nListar receitas por ingrediente\n";
+    $nome = readline("Digite o nome do ingrediente: ");
+
+    $sql = "SELECT DISTINCT r.id, r.nome, r.duracao, r.doses
+            FROM receita r
+            JOIN receita_ingrediente ri ON r.id = ri.id_receita
+            JOIN ingrediente i ON i.id = ri.id_ingrediente
+            WHERE LOWER(i.nome) = LOWER('$nome')";
+
+    $resultado = mysqli_query($con, $sql);
+
+    if (mysqli_num_rows($resultado) > 0) {
+        while ($linha = mysqli_fetch_assoc($resultado)) {
+            echo "ID: {$linha['id']} | Nome: {$linha['nome']} | Duração: {$linha['duracao']} | Doses: {$linha['doses']}\n";
+        }
+    } else {
+        echo "Nenhuma receita encontrada com esse ingrediente.\n";
+    }
+}
+
+function detalhesCompletosReceita($con)
+{
+    echo "\nDetalhes completos de uma receita\n";
+    $input = readline("Digite o ID ou nome da receita: ");
+
+    if (is_numeric($input)) {
+        $sql = "SELECT * FROM receita WHERE id = $input";
+    } else {
+        $sql = "SELECT * FROM receita WHERE LOWER(nome) = LOWER('$input')";
+    }
+
+    $resultado = mysqli_query($con, $sql);
+    if (mysqli_num_rows($resultado) == 0) {
+        echo "Receita não encontrada.\n";
+        return;
+    }
+
+    $linha = mysqli_fetch_assoc($resultado);
+    $id_receita = $linha['id'];
+
+    echo "\nReceita: {$linha['nome']}\n";
+    echo "Duração: {$linha['duracao']} | Doses: {$linha['doses']}\n";
+    echo "Modo de preparação:\n{$linha['modo_preparacao']}\n";
+
+    echo "\nIngredientes:\n";
+    $sql_ing = "SELECT i.nome, ri.quantidade, ri.unidade_de_medida
+                FROM receita_ingrediente ri
+                JOIN ingrediente i ON ri.id_ingrediente = i.id
+                WHERE ri.id_receita = $id_receita";
+
+    $resultado_ing = mysqli_query($con, $sql_ing);
+    if (mysqli_num_rows($resultado_ing) > 0) {
+        while ($ing = mysqli_fetch_assoc($resultado_ing)) {
+            echo "- {$ing['nome']}: {$ing['quantidade']} {$ing['unidade_de_medida']}\n";
+        }
+    } else {
+        echo "Nenhum ingrediente encontrado.\n";
+    }
+
+    echo "\nCategorias:\n";
+    $sql_cat = "SELECT c.nome 
+                FROM categoria c
+                JOIN receita_categoria rc ON rc.id_categoria = c.id
+                WHERE rc.id_receita = $id_receita";
+    $resultado_cat = mysqli_query($con, $sql_cat);
+    if (mysqli_num_rows($resultado_cat) > 0) {
+        while ($cat = mysqli_fetch_assoc($resultado_cat)) {
+            echo "- {$cat['nome']}\n";
+        }
+    } else {
+        echo "Nenhuma categoria associada.\n";
+    }
+}
+
+function pesquisarReceitasPorTitulo($con)
+{
+    echo "\nPesquisar receitas por parte do título\n";
+    $busca = readline("Digite parte do nome da receita: ");
+
+    $sql = "SELECT * FROM receita WHERE LOWER(nome) LIKE LOWER('%$busca%')";
+
+    $resultado = mysqli_query($con, $sql);
+    if (mysqli_num_rows($resultado) > 0) {
+        while ($linha = mysqli_fetch_assoc($resultado)) {
+            echo "ID: {$linha['id']} | Nome: {$linha['nome']} | Duração: {$linha['duracao']} | Doses: {$linha['doses']}\n";
+        }
+    } else {
+        echo "Nenhuma receita encontrada com esse título.\n";
     }
 }
 
