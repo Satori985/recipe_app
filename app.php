@@ -330,6 +330,11 @@ function listarIngredientes($con)
     $sql = "SELECT * FROM ingrediente";
     $resultado = mysqli_query($con, $sql);
 
+     if (!$resultado) {
+        echo "Erro na consulta: " . mysqli_error($con);
+        return;
+    }
+    
     if (mysqli_num_rows($resultado) > 0) {
         while ($linha = mysqli_fetch_assoc($resultado)) {
             echo "ID: {$linha['id']} | Nome: {$linha['nome']}\n";
